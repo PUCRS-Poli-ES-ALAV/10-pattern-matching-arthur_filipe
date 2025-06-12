@@ -1,152 +1,79 @@
-import java.util.Random;
-
 public class Problema3 {
-    static long iteracaoCount = 0;
-    static long instruCount   = 0;
+    private static long iterCount  = 0;  // comparações caractere-a-caractere
+    private static long instrCount = 0;  // instruções estimadas
 
-    public static void calculaLPS(String cam, int M, int[] lps) {
-        int len = 0;        instruCount++;
-        int i   = 1;        instruCount++;
-        lps[0]  = 0;        instruCount++;
-
-        while (i < M) {
-            iteracaoCount++;    // iteração do loop de LPS
-            instruCount++;
-
-            if (cam.charAt(i) == cam.charAt(len)) {
-                len++;           instruCount++;
-                lps[i] = len;    instruCount++;
-                i++;
-            } else {
-                if (len != 0) {
-                    instruCount++;
-                    len = lps[len - 1];
-                } else {
-                    lps[i] = 0;  instruCount++;
-                    i++;
-                }
-            }
-            instruCount++;
-        }
+    /** Zera ambos os contadores */
+    public static void resetCount() {
+        iterCount = 0;
+        instrCount = 0;
     }
 
-    public static long KMPBusca(String cam, String txt) {
-        int M = cam.length();    instruCount++;
-        int N = txt.length();    instruCount++;
+    /**
+     * KMP: O(n + m). Retorna índice da 1ª ocorrência ou -1.
+     */
+    public static int search(String txt, String pat) {
+        int n = txt.length();    instrCount++;
+        int m = pat.length();    instrCount++;
+        if (m == 0) { instrCount++; return 0; }
 
-        // trata padrão vazio: não há buscas a fazer
-        if (M == 0) {
-            return 0;
-        }
+        // constrói o array LPS
+        int[] lps = new int[m];  instrCount++;
+        buildLPS(pat, m, lps);
 
-        int[] lps = new int[M];  instruCount++;
-        int j    = 0;            instruCount++;
-        long matchCount = 0;
-
-        calculaLPS(cam, M, lps);
-
-        int i = 0;               instruCount++;
-        while (i < N) {
-            iteracaoCount++;      // iteração do loop de busca
-            instruCount++;
-
-            if (j < M && cam.charAt(j) == txt.charAt(i)) {
-                i++;              instruCount++;
-                j++;              instruCount++;
+        int i = 0, j = 0;         instrCount += 2;
+        int pos = -1;            instrCount++;
+        while (i < n) {
+            iterCount++;         instrCount++;
+            // correspondência direta
+            if (pat.charAt(j) == txt.charAt(i)) {
+                i++; instrCount++;
+                j++; instrCount++;
             }
-
-            if (j == M) {
-                matchCount++;     instruCount++;
-                j = lps[j - 1];   instruCount++;
-            }
-            else if (i < N && (j >= M || cam.charAt(j) != txt.charAt(i))) {
-                instruCount += 2;
+            instrCount++;
+            // padrão completo?
+            if (j == m) {
+                pos = i - j;    instrCount++;
+                break;
+            } else if (i < n && pat.charAt(j) != txt.charAt(i)) {
+                instrCount += 2;
                 if (j != 0) {
-                    instruCount++;
-                    j = lps[j - 1];
+                    j = lps[j - 1]; instrCount++;
                 } else {
-                    i++;
+                    i++;           instrCount++;
                 }
-                instruCount++;
+                instrCount++;
             }
         }
 
-        return matchCount;
+        instrCount++;
+        return pos;
     }
 
-    public static String geraUniforme(char c, int N) {
-        return String.valueOf(c).repeat(Math.max(0, N));
-    }
+    /** Constroi o “lps[]” para o padrão */
+    private static void buildLPS(String pat, int m, int[] lps) {
+        int len = 0;             instrCount++;
+        int i   = 1;             instrCount++;
+        lps[0]  = 0;             instrCount++;
 
-    public static String geraRandom(int N) {
-        Random r = new Random(123);
-        StringBuilder sb = new StringBuilder(N);
-        for (int i = 0; i < N; i++) {
-            sb.append((char)('a' + r.nextInt(26)));
-        }
-        return sb.toString();
-    }
-
-    public static void main(String[] args) {
-        String[][] casos = {
-                { "1. Padrão não existe",
-                        geraUniforme('a', 500_000),
-                        geraUniforme('b', 1_000) },
-
-                { "2. Padrão no início",
-                        geraUniforme('a', 1_000) + geraRandom(499_000),
-                        geraRandom(1_000) },
-
-                { "3. Padrão no fim",
-                        geraRandom(499_000) + geraRandom(1_000),
-                        geraRandom(1_000) },
-
-                { "4. Ocorrências sobrepostas",
-                        geraUniforme('a', 500_000),
-                        "aaa" },
-
-                { "5. Texto e padrão aleatórios",
-                        geraRandom(500_000),
-                        geraRandom(1_000) },
-
-                { "6. Padrão maior que o texto",
-                        geraRandom(800_000),
-                        geraRandom(1_000_000) },
-
-                { "7a. Texto vazio, padrão não vazio",
-                        "",
-                        geraRandom(1_000) },
-
-                { "7b. Texto não vazio, padrão vazio",
-                        geraRandom(1_000),
-                        "" },
-
-                { "7c. Texto e padrão vazios",
-                        "",
-                        "" },
-
-                { "8. Long-tail repetitivo",
-                        new String(new char[250_000]).replace("\0", "ab"),
-                        new String(new char[500]).replace("\0", "ab") }
-        };
-
-        for (String[] caso : casos) {
-            String nome = caso[0];
-            String txt  = caso[1];
-            String cam  = caso[2];
-
-            iteracaoCount = 0;
-            instruCount   = 0;
-
-            System.out.println("\n=== Caso de Teste: " + nome + " ===");
-            long t0 = System.currentTimeMillis();
-            long matches = KMPBusca(cam, txt);
-            long dt = System.currentTimeMillis() - t0;
-
-            System.out.printf(
-                    "Ocorrências: %d, Iterações: %d, Instruções: %d, Tempo: %d ms%n",
-                    matches, iteracaoCount, instruCount, dt
-            );
+        while (i < m) {
+            iterCount++;        instrCount++;
+            if (pat.charAt(i) == pat.charAt(len)) {
+                len++;          instrCount++;
+                lps[i] = len;   instrCount++;
+                i++;            instrCount++;
+            } else {
+                instrCount++;
+                if (len != 0) {
+                    len = lps[len - 1]; instrCount++;
+                } else {
+                    lps[i] = 0;  instrCount++;
+                    i++;         instrCount++;
+                }
+            }
+            instrCount++;
         }
     }
+
+    public static long getIterCount()  { return iterCount; }
+    public static long getInstrCount() { return instrCount; }
 }
